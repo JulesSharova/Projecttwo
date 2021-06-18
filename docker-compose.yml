@@ -1,0 +1,79 @@
+version: '3'
+
+services:
+  grafana:
+    image: grafana/grafana:6.7.2
+    container_name: grafana
+    volumes:
+      - "./var/lib/grafana"
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_USER=sharova
+      - GF_SECURITY_ADMIN_PASSWORD=sharova
+      - GF_USERS_ALLOW_SIGN_UP=false
+    restart: unless-stopped
+    ports:
+      - "8001:3000"
+    labels:
+      org.label-schema.group: "monitoring"
+      
+  redis:
+    image: redis:4.0.5-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    hostname: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - "./redis/etc/redis.conf:/usr/local/ets/redis/redis.conf"
+      - "./redis/data:/data"
+    
+  mysql:
+    image: mysql:8
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - "8002:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: sharova
+      MYSQL_DATABASE: sharova
+    volumes:
+      - "./db:/var/lib/mysql"
+
+  wordpress:
+    image: wordpress:php7.4-apache
+    ports:
+      - "8000:80"
+    environment:
+      WORDPRESS_DB_HOST: mysql
+      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_PASSWORD: sharova
+      WORDPRESS_DB_NAME: sharova
+    volumes:
+      - "./wp:/var/www/html/"
+
+  wp-cli:
+    image: wordpress:cli
+    user: "33:33"
+    environment:
+      WORDPRESS_DB_HOST: mysql
+      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_PASSWORD: sharova
+      WORDPRESS_DB_NAME: sharova
+    volumes:
+      - "./wp:/var/www/html/"
+      - "./configure-wp.sh:/opt/configure-wp.sh"
+#      - "./sample-content.xml:/var/www/html/sample-content.xml"
+
+#  mailserver:
+#    container_name: mailserver
+#   image: tvial/docker-mailserver:v2
+#    hostname: mail
+#    domainname: mydomain.test
+#    ports:
+#      - "25:25"    # smtp
+#      - "143:143"  # imap
+#      - "587:587"  # smtp-auth
+#      - "993:993"  # imap-secure
+#    volumes:
+#      - .dev/mail/accounts.cf:/tmp/docker-mailserver/postfix-accounts.cf:ro
+#
+   
